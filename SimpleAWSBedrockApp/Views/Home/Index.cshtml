@@ -1,0 +1,141 @@
+﻿@{
+    ViewData["Title"] = "AWS Bedrock App";
+}
+
+<div class="container mt-5">
+    <div class="row g-4">
+        <!-- Left Column: Modality and Prompt Section -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header d-flex align-items-center">
+                    <h2 class="text-center flex-grow-1">Choose Modality</h2>
+                    <i class="bi bi-list-task ms-3" style="font-size: 1.5rem;"></i>
+                </div>
+                <div class="card-body">
+                    <form id="bedrock-form" class="needs-validation" novalidate>
+                        <div class="mb-4">
+                            <label for="modality-select" class="form-label">Modality</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-gear"></i></span>
+                                <select class="form-select" id="modality-select" name="modality" required>
+                                    <option value="" disabled selected>Select an option</option>
+                                    <option value="generate-text">Generate Text</option>
+                                    <option value="summarize-text">Summarize Text</option>
+                                    <option value="generate-image">Generate Image</option>
+                                </select>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please select a modality.
+                            </div>
+                        </div>
+
+                        <div class="mb-4" id="prompt-container">
+                            <label for="prompt" class="form-label">Enter Prompt or Text</label>
+                            <textarea class="form-control" id="prompt" name="prompt" rows="2" required></textarea>
+                            <div class="invalid-feedback">
+                                Please provide a valid input.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Submit
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Result Section -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header d-flex align-items-center">
+                    <h2 class="text-center flex-grow-1">Result</h2>
+                    <i class="bi bi-clipboard-check ms-3" style="font-size: 1.5rem;"></i>
+                </div>
+                <div class="card-body position-relative">
+                    <!-- Loader spinner -->
+                    <div id="loading-spinner" class="spinner-border text-primary" role="status" style="display: none;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+
+                    <!-- Result container -->
+                    <pre id="result-output" class="bg-light p-3 rounded" style="min-height: 233px;">
+                        <!-- Result will be displayed here -->
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Bootstrap form validation
+    (() => {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+
+        Array.prototype.slice.call(forms).forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+
+    // Handle form submission and modality selection
+    document.getElementById('bedrock-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const modality = document.getElementById('modality-select').value;
+        const prompt = document.getElementById('prompt').value;
+        const resultOutput = document.getElementById('result-output');
+        const loadingSpinner = document.getElementById('loading-spinner');
+
+        if (modality && prompt) {
+            // Show loading spinner while waiting for API response
+            loadingSpinner.style.display = 'block';
+
+            let apiUrl;
+            switch (modality) {
+                case 'generate-text':
+                    apiUrl = '/Bedrock/GenerateText';
+                    break;
+                case 'summarize-text':
+                    apiUrl = '/Bedrock/SummarizeText';
+                    break;
+                case 'generate-image':
+                    apiUrl = '/Bedrock/GenerateImage';
+                    break;
+            }
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ prompt: prompt })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide spinner after receiving response
+                    loadingSpinner.style.display = 'none';
+
+                    // Insert the result
+                    if (modality === 'generate-image') {
+                        // Prepend the Base64 string with the data URL format (image/png or other format as needed)
+                        resultOutput.innerHTML = `<img src="data:image/png;base64,${data}" alt="Generated Image" class="img-fluid rounded" />`;
+                    } else {
+                        // Otherwise, display text results
+                        resultOutput.textContent = data;
+                    }
+                })
+                .catch(error => {
+                    loadingSpinner.style.display = 'none';
+                    resultOutput.textContent = 'Error: ' + error;
+                });
+        }
+    });
+</script>
