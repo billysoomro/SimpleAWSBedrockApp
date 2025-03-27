@@ -396,3 +396,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/SimpleAWSBedrockApp/aws-lambda-tools-defaults.json
